@@ -25,3 +25,23 @@
     padding-bottom: calc(var(--space-8) + var(--space-4));
   }
 }
+
+.dashboard-layout[data-theme="dark"] {
+  --color-primary: #2dd4bf;
+  --color-primary-strong: #5eead4;
+  --color-primary-soft: rgba(45, 212, 191, 0.16);
+  --color-secondary: #22b8c4;
+  --color-background: #0b1220;
+  --color-surface: #111a2e;
+  --color-surface-muted: #16213a;
+  --color-text: #eef2ff;
+  --color-text-muted: #9aa5c4;
+  --color-text-inverse: #0b1220;
+  --color-border: rgba(238, 242, 255, 0.12);
+  --color-border-strong: rgba(238, 242, 255, 0.24);
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgba(251, 191, 36, 0.18);
+  --color-positive: #34d399;
+  --color-error: #f87171;
+  --color-focus-ring: rgba(45, 212, 191, 0.4);
+}

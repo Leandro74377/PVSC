@@ -1,16 +1,17 @@
 import {
-  ChevronDown,
   CirclePlus,
-  FileText,
+  Headset,
   History,
   Home,
-  Lightbulb,
-  Settings,
-  Sparkles,
+  Moon,
+  Sun,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import logoDark from "../../../assets/logo-dark.png";
+import logoLight from "../../../assets/logo-light.png";
+import type { ThemeMode } from "./useTheme";
 import "./Sidebar.css";
 
 interface SidebarNavItem {
@@ -19,59 +20,111 @@ interface SidebarNavItem {
   icon: LucideIcon;
 }
 
-const navItems: SidebarNavItem[] = [
+const primaryNavItems: SidebarNavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: Home },
-  { label: "Nuevo análisis", to: "/analisis/nuevo", icon: CirclePlus },
-  { label: "Transacciones", to: "/dashboard/transacciones", icon: FileText },
-  { label: "Recomendaciones", to: "/dashboard/recomendaciones", icon: Lightbulb },
-  { label: "Historial", to: "/dashboard/historial", icon: History },
-  { label: "Configuración", to: "/dashboard/configuracion", icon: Settings },
+  { label: "Nuevo Análisis", to: "/analisis/nuevo", icon: CirclePlus },
+  { label: "Historial", to: "/historial", icon: History },
+];
+
+const secondaryNavItems: SidebarNavItem[] = [
+  { label: "Soporte", to: "/soporte", icon: Headset },
 ];
 
 interface SidebarProps {
+  theme: ThemeMode;
+  onThemeChange: (theme: ThemeMode) => void;
   userName?: string;
   userEmail?: string;
+  userPhoto?: string | null;
 }
 
-function Sidebar({ userName = "Usuario", userEmail = "usuario@email.com" }: SidebarProps) {
+function renderNavItems(items: SidebarNavItem[]) {
+  return items.map(({ label, to, icon: Icon }) => (
+    <NavLink
+      key={label}
+      to={to}
+      end={to === "/dashboard"}
+      className={({ isActive }) =>
+        `dashboard-sidebar__link${isActive ? " dashboard-sidebar__link--active" : ""}`
+      }
+    >
+      <Icon size={20} aria-hidden="true" />
+      {label}
+    </NavLink>
+  ));
+}
+
+function Sidebar({
+  theme,
+  onThemeChange,
+  userName = "Usuario",
+  userEmail = "",
+  userPhoto = null,
+}: SidebarProps) {
+  const avatarUrl =
+    userPhoto ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      userName,
+    )}&background=f3f4f6&color=374151`;
+
   return (
     <aside className="dashboard-sidebar">
       <NavLink className="dashboard-sidebar__brand" to="/dashboard" aria-label="Ir al dashboard">
-        <span className="dashboard-sidebar__brand-mark">
-          <Sparkles size={18} aria-hidden="true" />
-        </span>
-        <span className="dashboard-sidebar__brand-text">
-          FinanceAI
-          <small>Salud financiera</small>
-        </span>
+        <img
+          className="dashboard-sidebar__brand-logo"
+          src={theme === "dark" ? logoDark : logoLight}
+          alt="FinanceAI - Salud Financiera"
+        />
       </NavLink>
 
       <nav className="dashboard-sidebar__nav" aria-label="Navegación del dashboard">
-        {navItems.map(({ label, to, icon: Icon }) => (
-          <NavLink
-            key={label}
-            to={to}
-            end={to === "/dashboard"}
-            className={({ isActive }) =>
-              `dashboard-sidebar__link${isActive ? " dashboard-sidebar__link--active" : ""}`
-            }
-          >
-            <Icon size={20} aria-hidden="true" />
-            {label}
-          </NavLink>
-        ))}
+        {renderNavItems(primaryNavItems)}
+        <hr className="dashboard-sidebar__divider" />
+        {renderNavItems(secondaryNavItems)}
       </nav>
+
+      <hr className="dashboard-sidebar__divider" />
 
       <button className="dashboard-sidebar__user" type="button">
         <span className="dashboard-sidebar__user-avatar" aria-hidden="true">
-          <UserRound size={18} />
+          {userPhoto ? (
+            <img src={avatarUrl} alt="" className="dashboard-sidebar__user-avatar-image" />
+          ) : (
+            <UserRound size={18} />
+          )}
         </span>
         <span className="dashboard-sidebar__user-info">
           <strong>{userName}</strong>
-          <small>{userEmail}</small>
+          <small>{userEmail || "Sin email registrado"}</small>
         </span>
-        <ChevronDown size={16} aria-hidden="true" />
       </button>
+
+      <div className="dashboard-sidebar__theme-toggle" role="radiogroup" aria-label="Tema de la aplicación">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={theme === "light"}
+          className={`dashboard-sidebar__theme-option${
+            theme === "light" ? " dashboard-sidebar__theme-option--active" : ""
+          }`}
+          onClick={() => onThemeChange("light")}
+        >
+          <Sun size={16} aria-hidden="true" />
+          Light
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={theme === "dark"}
+          className={`dashboard-sidebar__theme-option${
+            theme === "dark" ? " dashboard-sidebar__theme-option--active" : ""
+          }`}
+          onClick={() => onThemeChange("dark")}
+        >
+          <Moon size={16} aria-hidden="true" />
+          Dark
+        </button>
+      </div>
     </aside>
   );
 }

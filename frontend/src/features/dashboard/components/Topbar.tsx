@@ -1,6 +1,7 @@
-import { Bell, CalendarDays, Plus, Sparkles } from "lucide-react";
+import { Bell, CalendarDays, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import Button from "../../../components/ui/Button";
+import BrandMark from "../../../components/ui/BrandMark";
 import "./Topbar.css";
 
 interface TopbarProps {
@@ -12,9 +13,7 @@ function Topbar({ lastAnalysisDate, hasNotifications = false }: TopbarProps) {
   return (
     <header className="dashboard-topbar">
       <Link className="dashboard-topbar__brand" to="/dashboard" aria-label="Ir al dashboard">
-        <span className="dashboard-topbar__brand-mark">
-          <Sparkles size={16} aria-hidden="true" />
-        </span>
+        <BrandMark size={22} />
         <span>FinanceAI</span>
       </Link>
 
@@ -29,16 +28,16 @@ function Topbar({ lastAnalysisDate, hasNotifications = false }: TopbarProps) {
         </Button>
       </div>
 
-      <button
+      <Link
         className="dashboard-topbar__notifications"
-        type="button"
         aria-label="Ver notificaciones"
+        to="/notificaciones"
       >
         <Bell size={20} aria-hidden="true" />
         {hasNotifications && (
           <span className="dashboard-topbar__notifications-dot" aria-hidden="true" />
         )}
-      </button>
+      </Link>
     </header>
   );
 }
