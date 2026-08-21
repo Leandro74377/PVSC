@@ -10,6 +10,7 @@ public interface TransactionService {
     List<TransactionDTO> getUserTransactions(Long userId);
     List<TransactionDTO> getRecentTransactions(Long userId, Integer limit);
     TransactionDTO getTransaction(Long transactionId);
+    TransactionDTO updateTransaction(Long transactionId, CreateTransactionDTO dto);
     void deleteTransaction(Long transactionId);
     List<Transaccion> getMonthlyTransactions(Long userId, Integer month, Integer year);
 }

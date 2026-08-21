@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import AlertsCard from "../features/dashboard/components/AlertsCard";
 import { dashboardMock, type DashboardData } from "../features/dashboard/components/dashboardMocks";
-import DashboardLayout from "../features/dashboard/components/DashboardLayout";
 import ExpensesByCategoryCard from "../features/dashboard/components/ExpensesByCategoryCard";
 import KeyFactorsCard from "../features/dashboard/components/KeyFactorsCard";
 import MonthlyEvolutionCard from "../features/dashboard/components/MonthlyEvolutionCard";
@@ -16,14 +14,10 @@ import "./DashboardPage.css";
 
 function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData>(dashboardMock);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const userId = getStoredUserId();
-    if (!userId) {
-      navigate("/login");
-      return;
-    }
+    if (!userId) return;
 
     async function loadDashboard() {
       const data = await fetchDashboardData(userId!);
@@ -31,39 +25,33 @@ function DashboardPage() {
     }
 
     loadDashboard();
-  }, [navigate]);
+  }, []);
 
   return (
-    <DashboardLayout lastAnalysisDate={dashboardData.lastAnalysisDate} hasNotifications>
-      <div className="dashboard-page__grid">
-        <div className="dashboard-page__main">
-          <ScoreCard
-            status={dashboardData.financialProfile}
-            score={dashboardData.score ?? 0}
-            monthlyIncome={dashboardData.indicators.monthlyIncome}
-            totalExpenses={dashboardData.indicators.totalExpenses}
+    <div className="dashboard-page__grid">
+      <div className="dashboard-page__main">
+        <ScoreCard
+          status={dashboardData.financialProfile}
+          score={dashboardData.score ?? 0}
+          monthlyIncome={dashboardData.indicators.monthlyIncome}
+          totalExpenses={dashboardData.indicators.totalExpenses}
+        />
+        <StatsGrid indicators={dashboardData.indicators} />
+        <div className="dashboard-page__charts-row">
+          <ExpensesByCategoryCard
+            categories={dashboardData.expensesByCategory}
+            total={dashboardData.expensesByCategory.reduce((sum, cat) => sum + cat.amount, 0)}
           />
-
-          <StatsGrid indicators={dashboardData.indicators} />
-
-          <div className="dashboard-page__charts-row">
-            <ExpensesByCategoryCard
-              categories={dashboardData.expensesByCategory}
-              total={dashboardData.expensesByCategory.reduce((sum, cat) => sum + cat.amount, 0)}
-            />
-            <MonthlyEvolutionCard data={dashboardData.monthlyEvolution} />
-          </div>
-
-          <TransactionsTable transactions={dashboardData.classifiedTransactions} />
+          <MonthlyEvolutionCard data={dashboardData.monthlyEvolution} />
         </div>
-
-        <div className="dashboard-page__side">
-          <KeyFactorsCard factors={dashboardData.keyFactors} />
-          <RecommendationsCard recommendations={dashboardData.recommendations} />
-          <AlertsCard alerts={dashboardData.alerts} />
-        </div>
+        <TransactionsTable transactions={dashboardData.classifiedTransactions} />
       </div>
-    </DashboardLayout>
+      <div className="dashboard-page__side">
+        <KeyFactorsCard factors={dashboardData.keyFactors} />
+        <RecommendationsCard recommendations={dashboardData.recommendations} />
+        <AlertsCard alerts={dashboardData.alerts} />
+      </div>
+    </div>
   );
 }
 

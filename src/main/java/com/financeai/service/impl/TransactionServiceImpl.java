@@ -109,6 +109,38 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    public TransactionDTO updateTransaction(Long transactionId, CreateTransactionDTO dto) {
+        Optional<Transaccion> existing = transactionRepository.findById(transactionId);
+        if (existing.isEmpty()) {
+            throw new RuntimeException("Transaction not found");
+        }
+
+        Transaccion transaction = existing.get();
+
+        if (dto.getNombreTienda() != null) {
+            transaction.setDescription(dto.getNombreTienda());
+        }
+        if (dto.getMonto() != null) {
+            transaction.setAmount(dto.getMonto());
+        }
+        if (dto.getFecha() != null) {
+            transaction.setTransactionDate(dto.getFecha());
+        }
+        if (dto.getCategoriaPrincipal() != null) {
+            Optional<Categoria> category = categoryRepository.findByName(dto.getCategoriaPrincipal());
+            if (category.isPresent()) {
+                transaction.setCategory(category.get());
+            }
+        }
+        if (dto.getType() != null) {
+            transaction.setType(Transaccion.TransactionType.valueOf(dto.getType()));
+        }
+
+        Transaccion saved = transactionRepository.save(transaction);
+        return convertToDTO(saved);
+    }
+
+    @Override
     public List<Transaccion> getMonthlyTransactions(Long userId, Integer month, Integer year) {
         Optional<Usuario> user = userRepository.findById(userId);
         if (user.isEmpty()) {

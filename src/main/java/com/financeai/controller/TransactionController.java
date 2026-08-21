@@ -90,4 +90,21 @@ public class TransactionController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/{transactionId}")
+    public ResponseEntity<?> updateTransaction(
+            @PathVariable Long transactionId,
+            @RequestBody CreateTransactionDTO dto) {
+        try {
+            TransactionDTO existing = transactionService.getTransaction(transactionId);
+            if (existing == null) {
+                return ResponseEntity.notFound().build();
+            }
+            // Reutilizar el userId de la transacción existente
+            TransactionDTO updated = transactionService.updateTransaction(transactionId, dto);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

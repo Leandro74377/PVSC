@@ -66,7 +66,6 @@ function LandingPage({ initialSection }: LandingPageProps) {
   return (
     <div className="landing-page">
       <Header />
-
       <main>
         <section className="hero-section">
           <Container className="hero-section__inner">
@@ -77,20 +76,17 @@ function LandingPage({ initialSection }: LandingPageProps) {
                 FinanceAI analiza tus ingresos, gastos y transacciones para mostrarte tu
                 salud financiera, clasificar tus gastos y darte recomendaciones claras.
               </p>
-
               <div className="hero-section__actions">
                 <Button to="/analisis/nuevo">Comenzar análisis</Button>
                 <Button href="#demo" variant="secondary">
                   Ver demo
                 </Button>
               </div>
-
               <p className="hero-section__notice">
                 La información generada es orientativa y no reemplaza asesoramiento financiero
                 profesional.
               </p>
             </div>
-
             <div className="hero-section__preview" id="demo">
               <DashboardPreviewSkeleton />
             </div>
@@ -105,7 +101,6 @@ function LandingPage({ initialSection }: LandingPageProps) {
               description="El MVP está pensado para ayudarte a ordenar información, revisar gastos y recibir una primera lectura de tu panorama financiero."
               align="center"
             />
-
             <div className="landing-grid landing-grid--features">
               {features.map((feature) => (
                 <FeatureCard key={feature.title} {...feature} />
@@ -122,7 +117,6 @@ function LandingPage({ initialSection }: LandingPageProps) {
               description="Cargás tu información, sumás tus movimientos y recibís una lectura inicial para entender mejor tus hábitos."
               align="center"
             />
-
             <div className="landing-grid landing-grid--steps">
               {steps.map((step) => (
                 <StepCard key={step.step} {...step} />
@@ -141,13 +135,11 @@ function LandingPage({ initialSection }: LandingPageProps) {
                   Cargá tus datos y obtené una visión clara de tu situación financiera.
                 </p>
               </div>
-
               <Button to="/analisis/nuevo">Comenzar análisis</Button>
             </div>
           </Container>
         </section>
       </main>
-
       <Footer />
     </div>
   );
