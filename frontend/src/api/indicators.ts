@@ -1,4 +1,5 @@
 import { env } from "./env";
+import { authenticatedFetch } from "./auth";
 import type { FinancialIndicators } from "./types";
 
 const MOCK_INDICATORS: FinancialIndicators = {
@@ -11,27 +12,33 @@ const MOCK_INDICATORS: FinancialIndicators = {
 
 /**
  * Obtiene los 5 indicadores financieros desde el backend Java.
+ * Los extrae del endpoint de dashboard (campo metrics).
  * Si el servidor no responde, devuelve datos mock de respaldo.
  */
 export async function fetchFinancialIndicators(
-  userId = "123",
+  userId = "1",
 ): Promise<FinancialIndicators> {
-  const url = `${env.apiBaseUrl}/api/indicadores/${userId}`;
+  const url = `${env.apiBaseUrl}/dashboard/${userId}`;
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await authenticatedFetch(url);
 
     if (!response.ok) {
       throw new Error(`Error del servidor Java: ${response.status}`);
     }
 
-    const indicators = (await response.json()) as FinancialIndicators;
-    console.info("Datos recibidos exitosamente desde Java");
+    const dashboard = await response.json();
+    const metrics = dashboard.metrics ?? {};
+
+    const indicators: FinancialIndicators = {
+      ratio_endeudamiento_dti: metrics.ratio_endeudamiento_dti ?? 0,
+      ratio_ahorro_neto: metrics.ratio_ahorro_neto ?? 0,
+      meses_supervivencia: metrics.meses_supervivencia ?? 0,
+      gastos_esenciales_ratio: metrics.gastos_esenciales_ratio ?? 0,
+      gastos_estilo_vida_ratio: metrics.gastos_estilo_vida_ratio ?? 0,
+    };
+
+    console.info("Indicadores recibidos exitosamente desde Java");
     return indicators;
   } catch (error) {
     console.warn(
