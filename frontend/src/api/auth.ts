@@ -21,7 +21,11 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
     throw new Error(body || "Credenciales incorrectas");
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    throw new Error("El servidor no devolvió datos");
+  }
+  return JSON.parse(text) as AuthResponse;
 }
 
 export async function registerUser(nombre: string, email: string, password: string): Promise<AuthResponse> {
@@ -38,7 +42,11 @@ export async function registerUser(nombre: string, email: string, password: stri
     throw new Error(body || "Error al crear la cuenta");
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    throw new Error("El servidor no devolvió datos");
+  }
+  return JSON.parse(text) as AuthResponse;
 }
 
 // --- Manejo de sesión con JWT ---

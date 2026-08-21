@@ -19,6 +19,7 @@ import { loadDraft } from "../../utils/draftStorage";
 import { createEmptyAnalysisDraft, type AnalysisDraft } from "../../types/analysis-draft";
 import type { AnalysisWizardStep } from "../../types/analysis-flow";
 import { MockAnalysisGateway } from "../../gateways/MockAnalysisGateway";
+import { RealAnalysisGateway } from "../../gateways/RealAnalysisGateway";
 import AnalysisStepper from "./AnalysisStepper";
 import "./AnalysisWizard.css";
 
@@ -59,7 +60,7 @@ function AnalysisWizard() {
     return loadDraft(userId) ?? emptyDraft;
   }, [emptyDraft, userId]);
 
-  const gateway = useMemo(() => new MockAnalysisGateway(), []);
+  const gateway = useMemo(() => new RealAnalysisGateway(), []);
 
   const methods = useForm<AnalysisDraftFormValues>({
     resolver: zodResolver(analysisDraftSchema),

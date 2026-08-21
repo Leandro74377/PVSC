@@ -32,16 +32,17 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (!response.ok) {
-        throw new Error(data.message || "Credenciales incorrectas.");
+        throw new Error(data.message || data || "Credenciales incorrectas.");
       }
 
       console.log("Login exitoso, datos del servidor:", data);
@@ -49,11 +50,11 @@ function Login() {
       localStorage.setItem("userId", data.id.toString());
 
       if (data.token) {
-        localStorage.setItem("jwt_token", data.token);
+        localStorage.setItem("token", data.token);
       }
 
-      localStorage.setItem("userName", data.name);
-      localStorage.setItem("userEmail", data.email);
+      localStorage.setItem("userName", data.nombre || data.name || "");
+      localStorage.setItem("userEmail", data.email || "");
 
       if (data.photo) {
         localStorage.setItem("userPhoto", data.photo);

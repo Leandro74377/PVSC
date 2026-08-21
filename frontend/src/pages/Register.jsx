@@ -45,19 +45,28 @@ function Register() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/register", {
+      const response = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ nombre: name, email, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (!response.ok) {
-        throw new Error(data.message || "Error al registrar en el servidor.");
+        throw new Error(data.message || data || "Error al registrar en el servidor.");
       }
 
-      console.log("Usuario validado por el backend:", data);
+      // Guardar sesión con el token JWT
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", String(data.id));
+        localStorage.setItem("userName", data.nombre || name);
+        localStorage.setItem("userEmail", data.email || email);
+      }
+
+      console.log("Usuario registrado exitosamente:", data);
       setIsSuccess(true);
       setTimeout(() => navigate("/login"), 2500);
     } catch (err) {
