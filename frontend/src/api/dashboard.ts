@@ -159,7 +159,7 @@ function mapDashboard(dto: DashboardDTO): DashboardData {
     indicators,
     expensesByCategory:
       dto.expensesByCategory?.map((item) => ({
-        category: item.categoria_principal ?? "Otros",
+        category: item.categoria_principal || "Otros",
         amount: item.monto ?? 0,
         percentage: item.porcentaje != null ? (item.porcentaje > 1 ? item.porcentaje / 100 : item.porcentaje) : 0,
       })) ?? [],
@@ -210,6 +210,15 @@ export async function fetchDashboardData(userId = "1"): Promise<DashboardData> {
     if (!response.ok) {
       const body = await response.text();
       console.error(`[Dashboard] Error del backend: ${response.status} ${response.statusText}`, body);
+
+      // Si el usuario no existe (backend reiniciado con H2), limpiar sesión
+      if (response.status === 500 || response.status === 404 || response.status === 401) {
+        console.warn("[Dashboard] Sesión inválida. Limpiando localStorage...");
+        localStorage.clear();
+        window.location.href = "/login";
+        return dashboardMock; // no se alcanza pero TypeScript lo necesita
+      }
+
       throw new Error(`Error del backend: ${response.status}`);
     }
 

@@ -42,9 +42,9 @@ public class DashboardServiceImpl implements DashboardService {
     @Autowired
     private MlService mlService;
 
-    // Categorías consideradas esenciales
+    // Categorías consideradas esenciales (con y sin tilde para compatibilidad con ML)
     private static final Set<String> CATEGORIAS_ESENCIALES = Set.of(
-        "Alimentación", "Hogar", "Salud", "Transporte"
+        "Alimentación", "Alimentacion", "Hogar", "Salud", "Transporte"
     );
 
     // Categorías de ocio/entretenimiento
@@ -104,12 +104,18 @@ public class DashboardServiceImpl implements DashboardService {
                 ingresoMensualFijo += t.getAmount();
             } else if (t.getType() == Transaccion.TransactionType.EXPENSE) {
                 String categoryName = t.getCategory().getName();
-                if (CATEGORIAS_ESENCIALES.contains(categoryName)) {
+                // Normalizar para comparar sin problemas de tildes
+                String normalizedCategory = categoryName
+                    .replace("á", "a").replace("é", "e").replace("í", "i")
+                    .replace("ó", "o").replace("ú", "u");
+                boolean esEsencial = CATEGORIAS_ESENCIALES.contains(categoryName)
+                    || CATEGORIAS_ESENCIALES.contains(normalizedCategory);
+                if (esEsencial) {
                     gastosEsencialesMensuales += t.getAmount();
                 } else {
                     gastosNoEsencialesMensuales += t.getAmount();
                 }
-                if (CATEGORIAS_OCIO.contains(categoryName)) {
+                if (CATEGORIAS_OCIO.contains(categoryName) || CATEGORIAS_OCIO.contains(normalizedCategory)) {
                     frecuenciaTransaccionesOcio++;
                 }
             }
@@ -150,8 +156,12 @@ public class DashboardServiceImpl implements DashboardService {
         // gastos_estilo_vida_ratio = gastos_no_esenciales_mensuales / ingreso_mensual
         Double gastosEstiloVidaRatio = ingresoMensual > 0 ? gastosNoEsencialesMensuales / ingresoMensual : 0.0;
 
-        // meses_supervivencia = Si(gastos_esenciales + cuotas > 0): ahorro_total / (gastos_esenciales + cuotas), sino 0
+        // meses_supervivencia = Si(gastos_esenciales + cuotas > 0): ahorro_total / (gastos_esenciales + cuotas)
+        // Fallback: si no hay gastos esenciales clasificados, usar gastos_totales como denominador
         Double denominadorSupervivencia = gastosEsencialesMensuales + cuotasMensualesDeuda;
+        if (denominadorSupervivencia <= 0 && gastosTotalesDelMes > 0) {
+            denominadorSupervivencia = gastosTotalesDelMes;
+        }
         Double mesesSupervivencia = denominadorSupervivencia > 0 ? ahorroTotal / denominadorSupervivencia : 0.0;
 
         // perfil_financiero — primero intentar con el modelo ML, si no, usar cálculo local

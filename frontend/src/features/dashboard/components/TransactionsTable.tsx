@@ -72,7 +72,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
         </table>
       </div>
 
-      <Link className="transactions-table__footer-link" to="/dashboard/transacciones">
+      <Link className="transactions-table__footer-link" to="/historial">
         Ver todas las transacciones
         <ChevronRight size={16} aria-hidden="true" />
       </Link>

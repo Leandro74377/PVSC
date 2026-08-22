@@ -41,10 +41,8 @@
 }
 
 .expenses-category-card__legend-label {
-  overflow: hidden;
   color: var(--color-text);
   font-weight: 600;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

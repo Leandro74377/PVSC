@@ -20,14 +20,27 @@ const createId = (prefix: string): string => {
   return `${prefix}-${Date.now()}-${Math.round(Math.random() * 100000)}`;
 };
 
-const getMockCategory = (transaction: AnalysisTransactionDraftItem): string => {
+export const getMockCategory = (transaction: AnalysisTransactionDraftItem): string => {
   const description = transaction.description.toLowerCase();
   if (
     description.includes("super") ||
     description.includes("mercado") ||
     description.includes("carrefour") ||
     description.includes("coto") ||
-    description.includes("comida")
+    description.includes("comida") ||
+    description.includes("cafe") ||
+    description.includes("café") ||
+    description.includes("restaurante") ||
+    description.includes("restaurant") ||
+    description.includes("panaderia") ||
+    description.includes("panadería") ||
+    description.includes("almacen") ||
+    description.includes("almacén") ||
+    description.includes("verduleria") ||
+    description.includes("verdulería") ||
+    description.includes("delivery") ||
+    description.includes("rappi") ||
+    description.includes("pedidosya")
   ) {
     return "Alimentación";
   }
@@ -49,6 +62,17 @@ const getMockCategory = (transaction: AnalysisTransactionDraftItem): string => {
     description.includes("ocio")
   ) {
     return "Entretenimiento";
+  }
+  if (
+    description.includes("silla") ||
+    description.includes("mueble") ||
+    description.includes("hogar") ||
+    description.includes("ferreteria") ||
+    description.includes("ferretería") ||
+    description.includes("limpieza") ||
+    description.includes("electrodomestico")
+  ) {
+    return "Hogar";
   }
   return "Otros";
 };

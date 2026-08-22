@@ -8,6 +8,7 @@ import com.financeai.entity.Usuario;
 import com.financeai.repository.CategoryRepository;
 import com.financeai.repository.TransactionRepository;
 import com.financeai.repository.UserRepository;
+import com.financeai.service.MlService;
 import com.financeai.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -31,6 +33,9 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private MlService mlService;
+
     @Override
     public TransactionDTO createTransaction(Long userId, CreateTransactionDTO dto) {
         Optional<Usuario> user = userRepository.findById(userId);
@@ -38,21 +43,43 @@ public class TransactionServiceImpl implements TransactionService {
             throw new RuntimeException("User not found");
         }
 
-        Optional<Categoria> category = categoryRepository.findByName(dto.getCategoriaPrincipal());
+        // Si la categoría es genérica ("Otras", "Otros", null), intentar predecir con el modelo ML
+        String categoriaNombre = dto.getCategoriaPrincipal();
+        if (categoriaNombre == null || categoriaNombre.isBlank()
+                || categoriaNombre.equalsIgnoreCase("Otras")
+                || categoriaNombre.equalsIgnoreCase("Otros")) {
 
-        // Si la categoría no existe y es un ingreso, crearla automáticamente
-        if (category.isEmpty()) {
-            if ("INCOME".equalsIgnoreCase(dto.getType())) {
-                Categoria nuevaCategoria = new Categoria();
-                nuevaCategoria.setName(dto.getCategoriaPrincipal());
-                nuevaCategoria.setColor("#4CAF50");
-                nuevaCategoria.setPercentage(0);
-                nuevaCategoria.setIcon("dollar-sign");
-                nuevaCategoria = categoryRepository.save(nuevaCategoria);
-                category = Optional.of(nuevaCategoria);
-            } else {
-                throw new RuntimeException("Category not found");
+            try {
+                String descripcion = dto.getNombreTienda() != null ? dto.getNombreTienda() : "";
+                String predicha = mlService.predecirCategoria(Map.of(
+                        "nombre_tienda", descripcion,
+                        "subcategoria", descripcion,
+                        "esencial", false
+                ));
+                if (predicha != null && !predicha.isBlank()) {
+                    categoriaNombre = predicha;
+                }
+            } catch (Exception e) {
+                System.err.println("[TransactionService] ML prediction failed, using fallback: " + e.getMessage());
             }
+
+            // Si sigue sin categoría válida, usar "Otros" como fallback
+            if (categoriaNombre == null || categoriaNombre.isBlank()) {
+                categoriaNombre = "Otros";
+            }
+        }
+
+        Optional<Categoria> category = categoryRepository.findByName(categoriaNombre);
+
+        // Si la categoría no existe, crearla
+        if (category.isEmpty()) {
+            Categoria nuevaCategoria = new Categoria();
+            nuevaCategoria.setName(categoriaNombre);
+            nuevaCategoria.setColor("#78909C");
+            nuevaCategoria.setPercentage(0);
+            nuevaCategoria.setIcon("tag");
+            nuevaCategoria = categoryRepository.save(nuevaCategoria);
+            category = Optional.of(nuevaCategoria);
         }
 
         Transaccion transaction = new Transaccion();
