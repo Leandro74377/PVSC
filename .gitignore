@@ -11,5 +11,8 @@ target
 .DS_Store
 Thumbs.db
 *.log
+*.key
+*.pem
 
 oracleJdk-26/
+testing-main/
