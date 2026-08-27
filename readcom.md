@@ -1587,3 +1587,75 @@ El codigo esta completo y funcional en frontend
 La documentacion del proyecto dice que falta confirmar si Google Sign-In formara parte de la version final del MVP
 Depende de que el backend tenga implementado el endpoint /api/auth/google (que en el codigo del UserController.java actual no aparece explicitamente, pero el hook lo llama)
 Eso es todo lo que hay sobre Google OAuth en tu proyecto.
+
+
+No, no te lo habia detallado. Aca esta como estan las validaciones:
+
+Validaciones en el Backend Java:
+
+Hay dos niveles de validacion:
+
+1. Validacion con anotaciones Jakarta (CreateTransactionDTO)
+El DTO de crear transaccion usa anotaciones de jakarta.validation.constraints:
+
+java
+
+@NotBlank(message = "El nombre de tienda es requerido")
+private String nombreTienda;
+
+@NotNull(message = "El monto es requerido")
+private Double monto;
+
+@NotBlank(message = "La categoría principal es requerida")
+private String categoriaPrincipal;
+
+@NotNull(message = "La fecha es requerida")
+private LocalDateTime fecha;
+
+@NotBlank(message = "El tipo es requerido (INCOME o EXPENSE)")
+private String type;
+Campos opcionales (sin validacion): subcategoria, metodoPago, esencial.
+
+2. Validacion manual en los controladores
+Ademas de las anotaciones, el TransactionController hace validaciones manuales redundantes (por si @Valid no se aplica):
+
+java
+
+if (dto.getNombreTienda() == null || dto.getNombreTienda().isEmpty())
+    return ResponseEntity.badRequest().body("El nombre de tienda es requerido");
+if (dto.getMonto() == null)
+    return ResponseEntity.badRequest().body("El monto es requerido");
+if (dto.getCategoriaPrincipal() == null || dto.getCategoriaPrincipal().isEmpty())
+    return ResponseEntity.badRequest().body("La categoría principal es requerida");
+if (dto.getFecha() == null)
+    return ResponseEntity.badRequest().body("La fecha es requerida");
+if (dto.getType() == null || dto.getType().isEmpty())
+    return ResponseEntity.badRequest().body("El tipo es requerido (INCOME o EXPENSE)");
+El UserController tambien valida manualmente en login y registro:
+
+java
+
+// Login
+if (email == null || email.isEmpty()) → "El email es requerido"
+if (password == null || password.isEmpty()) → "La contraseña es requerida"
+
+// Registro
+if (user.getEmail() == null || user.getEmail().isEmpty()) → "El email es requerido"
+if (user.getPassword() == null || user.getPassword().isEmpty()) → "La contraseña es requerida"
+if (user.getNombre() == null || user.getNombre().isEmpty()) → "El nombre es requerido"
+El updateUser usa @Valid @RequestBody Usuario user para activar la validacion automatica de Jakarta.
+
+3. En el frontend (Login)
+El frontend tambien valida antes de enviar al backend:
+
+typescript
+
+// Campos vacios
+if (!email.trim() || !password.trim()) → "Por favor, completá todos los campos."
+
+// Formato de email con regex
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!emailRegex.test(email)) → "Por favor, ingresá un correo electrónico válido."
+Y en el flujo de Nuevo Analisis se usa Zod + React Hook Form para validar schemas de datos financieros y transacciones antes de enviarlos.
+
+Resumen: Validacion doble (frontend + backend), con mezcla de anotaciones Jakarta Validation y chequeos manuales en los controladores.
