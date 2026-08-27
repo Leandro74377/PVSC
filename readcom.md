@@ -2087,3 +2087,138 @@ Si se logea con email/password normal, se hace removeItem('userPhoto')
 No hay logout implementado que limpie el localStorage (al menos no lo vi en el codigo). Si el usuario quiere "cerrar sesion" tendria que borrar manualmente los datos o se tendria que agregar esa funcionalidad.
 
 Eso es todo lo que usa localStorage en tu proyecto.
+
+
+No hay un Dockerfile para el backend Java en el repo. Te explico todo junto:
+
+Docker y deploy — como esta realmente:
+
+Docker Compose (para correr todo junto)
+El docker-compose.yml define 4 servicios pero el Dockerfile del backend Java no existe en el repo. Solo estan:
+
+1. Dockerfile del ML Service (
+Dockerfile.txt
+):
+
+dockerfile
+
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+EXPOSE 5000
+CMD ["python", "app.py"]
+Imagen base: Python 3.11 slim
+Solo copia requirements.txt y app.py
+Expone puerto 5000
+2. Dockerfile del Frontend (
+Dockerfile.txt
+):
+
+dockerfile
+
+# Etapa 1: Build
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm build
+
+# Etapa 2: Servir
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+Multi-stage build: primero compila con Node 22, despues sirve con Nginx
+El resultado final es solo HTML/CSS/JS estatico servido por Nginx
+Expone puerto 80
+3. Nginx del frontend (nginx.conf.txt):
+
+nginx
+
+location /backend/ {
+    proxy_pass http://backend:8080/api/;  # redirige al servicio Java dentro de Docker
+}
+location / {
+    try_files $uri $uri/ /index.html;  # SPA fallback para React Router
+}
+Proxy reverso: /backend/ → Java backend en puerto 8080
+SPA fallback: cualquier ruta que no sea archivo sirve index.html (para que React Router funcione)
+Deploy real en OCI (sin Docker)
+En produccion no se usa Docker para el backend Java. Se despliega como un archivo WAR directo:
+
+bash
+
+# Compilar
+./mvnw clean package -DskipTests
+
+# Subir a OCI
+scp target/apirest-0.0.1-SNAPSHOT.war ubuntu@146.181.60.43:/home/ubuntu/apirest.war
+
+# Ejecutar con Java directamente
+java -jar /home/ubuntu/apirest.war --server.port=8080
+Por que WAR y no Docker:
+
+La instancia de OCI es VM.Standard.E2.1.Micro (la gratuita) — tiene recursos muy limitados (1 GB RAM)
+Correr Docker + Java + MySQL + Python en esa maquina seria demasiado pesado
+Un WAR directo con java -jar consume mucho menos recursos
+Se maneja con systemd para que arranque automatico y se reinicie si cae
+Por que existe el Docker Compose entonces:
+
+Es para desarrollo local: con docker-compose up levantas todo el sistema (MySQL + backend + ML + frontend) en tu maquina sin instalar nada
+En produccion cada servicio esta separado: MySQL en Railway, backend en OCI sin Docker, frontend en Vercel, y el ML service probablemente corre en Docker dentro de OCI o separado
+Resumen:
+
+Componente	En desarrollo (local)	En produccion
+Frontend	Docker (Nginx) o pnpm dev	Vercel (estatico)
+Backend Java	Docker o mvnw spring-boot:run	WAR directo en OCI (systemd)
+ML Service	Docker (Python 3.11)	Docker en OCI (probable)
+MySQL	Docker (mysql:8.4)	Railway (servicio externo)
+
+Un WAR (Web Application Archive) es basicamente un ZIP con todo lo que necesita tu aplicacion Java para correr. En tu proyecto se genera con:
+
+bash
+
+./mvnw clean package -DskipTests
+# Produce: target/apirest-0.0.1-SNAPSHOT.war
+Que tiene adentro:
+
+
+apirest-0.0.1-SNAPSHOT.war
+├── META-INF/
+│   └── MANIFEST.MF              # Dice cual es la clase principal para arrancar
+├── WEB-INF/
+│   ├── classes/                  # Tu codigo compilado (.class)
+│   │   └── com/financeai/
+│   │       ├── controller/       # Controladores compilados
+│   │       ├── service/          # Servicios compilados
+│   │       ├── entity/           # Entidades compiladas
+│   │       ├── config/           # Configuracion compilada
+│   │       ├── dto/              # DTOs compilados
+│   │       ├── repository/       # Repositorios compilados
+│   │       └── FinanceAiApplication.class
+│   ├── lib/                      # TODAS las dependencias (JARs)
+│   │   ├── spring-boot-*.jar
+│   │   ├── spring-web-*.jar
+│   │   ├── hibernate-*.jar
+│   │   ├── mysql-connector-*.jar
+│   │   ├── jjwt-*.jar
+│   │   ├── jackson-*.jar
+│   │   └── ... (todas las librerias del pom.xml)
+│   └── application.properties    # Configuracion de Spring Boot
+└── org/springframework/boot/     # Loader de Spring Boot (para ejecutar con java -jar)
+En palabras simples:
+
+classes/ = tu codigo Java ya compilado a bytecode
+lib/ = todas las librerias que declaraste en el pom.xml (Spring, Hibernate, JWT, MySQL driver, etc.)
+application.properties = la configuracion (puerto, URL de base de datos, etc.)
+El loader de Spring Boot = lo que hace que puedas correrlo con java -jar directamente
+Por que WAR y no JAR en tu proyecto:
+
+El pom.xml dice <packaging>jar</packaging> pero la documentacion habla de WAR. Spring Boot puede generar ambos. La diferencia:
+
+JAR = se ejecuta solo con java -jar app.jar (tiene Tomcat embebido adentro)
+WAR = puede ejecutarse con java -jar igual, pero tambien puede desplegarse en un servidor Tomcat externo
+En tu caso se usa como java -jar directamente, asi que funciona igual que un JAR gordo: es un archivo unico que contiene todo (codigo + dependencias + servidor web) y se ejecuta sin instalar nada mas que Java.
