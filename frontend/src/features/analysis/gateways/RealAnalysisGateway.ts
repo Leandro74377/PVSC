@@ -39,7 +39,7 @@ export class RealAnalysisGateway implements AnalysisGateway {
       }
 
       try {
-        await authenticatedFetch(`${env.apiBaseUrl}/users/${userId}/financial?${params.toString()}`, {
+        await authenticatedFetch(`${env.apiBaseUrl}/api/usuarios/${userId}/financial?${params.toString()}`, {
           method: "PUT",
         });
       } catch (e) {

@@ -32,7 +32,7 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/users/login", {
+      const response = await fetch("/api/usuarios/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

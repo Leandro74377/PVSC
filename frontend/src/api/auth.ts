@@ -8,7 +8,7 @@ export interface AuthResponse {
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResponse> {
-  const url = `${env.apiBaseUrl}/users/login`;
+  const url = `${env.apiBaseUrl}/api/usuarios/login`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -29,7 +29,7 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 }
 
 export async function registerUser(nombre: string, email: string, password: string): Promise<AuthResponse> {
-  const url = `${env.apiBaseUrl}/users`;
+  const url = `${env.apiBaseUrl}/api/usuarios`;
 
   const response = await fetch(url, {
     method: "POST",
