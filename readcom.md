@@ -1884,3 +1884,127 @@ ProtectedRoute → DashboardLayout → Sidebar + Topbar + MobileTabBar → Outle
 Las rutas privadas tienen un layout comun con sidebar lateral, barra superior, y barra de tabs para movil.
 
 Ahora si, eso es todo. No queda ningun archivo sin revisar ni ninguna funcionalidad sin mencionar.
+
+Ok, si me falto algo. Aca va lo que no te habia dicho:
+
+Flujo de "Nuevo Analisis" (el wizard del frontend)
+Esto es una feature grande que no te habia detallado. Es un formulario de 3 pasos donde el usuario ingresa toda su informacion financiera:
+
+Paso 1 - Datos financieros:
+
+Ingresos (puede agregar multiples): descripcion, monto mensual, tipo (SALARY, FREELANCE, BUSINESS, BENEFIT, OTHER)
+Ahorro mensual estimado
+Pagos mensuales de deuda
+Monto del fondo de emergencia
+Frecuencia de ahorro (WEEKLY, BIWEEKLY, MONTHLY, IRREGULAR, NONE)
+Paso 2 - Transacciones:
+
+El usuario carga sus transacciones una por una: descripcion, monto, fecha, metodo de pago, modalidad de compra, tipo de movimiento
+Metodos de pago: CASH, DEBIT, CREDIT, TRANSFER, WALLET, OTHER
+Modalidad: PHYSICAL, ONLINE, MIXED, OTHER
+Tipo: EXPENSE, INCOME, TRANSFER, OTHER
+Paso 3 - Revision:
+
+El usuario revisa todo antes de confirmar
+Validacion con Zod: Todo se valida con un schema de Zod que exige:
+
+Montos sean numeros finitos y no negativos
+Fechas en formato ISO (string.date())
+Campos de texto no vacios (min 1 caracter)
+Tipos dentro de los enums permitidos
+Persistencia del borrador: El draft se guarda en localStorage para que si el usuario cierra la pagina no pierda lo que llevo.
+
+Envio al backend: Cuando confirma, se envia todo via POST /api/usuarios/analisis (HttpAnalysisGateway) con el JWT en el header.
+
+Manual de Usuario (docs/Manual_Usuario.md)
+Hay un manual completo para el usuario final que explica:
+
+Que es Finance AI y para que sirve
+Requisitos (navegador moderno, PC/Laptop, internet)
+Como hacer un nuevo analisis (los 3 pasos)
+Como interpretar los perfiles (Saludable / En Observacion / En Riesgo)
+FAQ: no se conecta a bancos, no es para celular
+Solucion de problemas (refrescar, verificar internet)
+Consolidacion del frontend (como se unio el codigo)
+El frontend se consolido desde 3 ramas distintas:
+
+feature/notifications-frontend
+origin/Juan
+origin/feature/dashboard
+Se fusionaron selectivamente en feature/frontend-consolidated preservando todo el trabajo pero sin romper nada.
+
+Arquitectura visual del frontend (layout)
+
+ProtectedRoute → DashboardLayout → Sidebar + Topbar + MobileTabBar → Outlet → Pagina
+Las rutas privadas tienen un layout comun con sidebar lateral, barra superior, y barra de tabs para movil.
+
+Ahora si, eso es todo. No queda ningun archivo sin revisar ni ninguna funcionalidad sin mencionar.
+
+Est. Credits Used: 2.09
+Elapsed time: 41s
+
+
+Checkpoint
+Restore
+sobre la seguridad de jwt y spring security si me dijsite o no
+
+Kiro
+Si, ya te lo dije pero en partes sueltas. Te lo junto todo en un solo lugar para que quede claro:
+
+Seguridad completa del proyecto (JWT + Spring Security):
+
+Spring Security (configuracion en SecurityConfig.java)
+CORS: permite peticiones desde localhost:5173 (dev) y financeaiwebapp.vercel.app (prod). Metodos permitidos: GET, POST, PUT, DELETE, OPTIONS.
+CSRF: desactivado (porque es API REST stateless, no usa cookies de sesion)
+Sesiones: STATELESS (no guarda sesion en servidor, todo se maneja con JWT)
+Rutas publicas (no requieren token):
+/api/**, /usuarios/** (login, registro)
+/h2-console/** (base de datos H2 en desarrollo)
+/v3/api-docs/**, /swagger-ui/** (documentacion OpenAPI)
+Rutas protegidas: todo lo demas requiere JWT valido
+Password Encoder: BCrypt (hashing de contrasenas)
+JWT (como funciona en JwtService.java)
+Libreria: jjwt 0.12.3
+Algoritmo de firma: HMAC-SHA (clave secreta en Base64)
+Clave secreta: se lee de la variable jwt.secret (default hardcodeado solo para dev)
+Expiracion: 24 horas (86400000 ms)
+Contenido del token:
+subject: userId (string)
+email: email del usuario
+nombre: nombre del usuario
+issuedAt: fecha de creacion
+expiration: fecha de vencimiento
+Filtro JWT (JwtAuthenticationFilter.java)
+Se ejecuta en cada peticion HTTP automaticamente:
+
+
+1. Busca header "Authorization: Bearer <token>"
+2. Si no hay header → deja pasar (sera ruta publica o dara 403)
+3. Si hay header:
+   a. Extrae el token (quita "Bearer ")
+   b. Verifica que no este expirado
+   c. Si es valido → extrae userId, lo pone en el SecurityContext
+   d. Si es invalido → lo ignora silenciosamente, sigue sin autenticar
+4. Continua con el siguiente filtro de la cadena
+Flujo completo login → peticion protegida:
+
+1. POST /usuarios/login {email, password}
+2. Backend busca usuario por email
+3. Compara password con BCrypt (passwordEncoder.matches)
+4. Si ok → genera JWT con userId, email, nombre
+5. Devuelve: { token: "eyJhbG...", id: 1, nombre: "Ana", email: "ana@email.com" }
+6. Frontend guarda token en localStorage
+
+--- Para cada peticion protegida: ---
+
+7. Frontend envia: Authorization: Bearer eyJhbG...
+8. JwtAuthenticationFilter intercepta
+9. Valida token, extrae userId
+10. Pone userId en SecurityContext
+11. El controlador procesa la peticion normalmente
+Que pasa si el token expira o es invalido:
+El filtro no autentifica al usuario
+Spring Security ve que la ruta requiere autenticacion
+Devuelve HTTP 403 Forbidden
+El frontend deberia redirigir al login (depende de la implementacion del frontend)
+Eso es todo lo que hay de seguridad. No hay refresh tokens, no hay roles/permisos diferenciados, no hay blacklist de tokens. Es un esquema JWT basico pero funcional para un MVP.
