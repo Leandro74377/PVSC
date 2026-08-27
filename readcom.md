@@ -1781,3 +1781,51 @@ List<AlertDTO> resultado = listaDeAlertas
     .collect(Collectors.toList());  // junta todo en una lista nueva
 Es como una linea de produccion en una fabrica: le metes las piezas crudas por un lado, pasan por varias estaciones (filtrar, transformar, ordenar) y al final sale el producto terminado
 
+Revisando todo, hay un par de cosas menores que no te habia mencionado:
+
+Lo que faltaba:
+
+1. Contrasenas hasheadas con BCrypt
+Cuando un usuario se registra, la contrasena nunca se guarda en texto plano. Se encripta con BCrypt antes de guardarla:
+
+java
+
+user.setPassword(passwordEncoder.encode(password));  // "123456" → "$2a$10$xK8fj..."
+Y al hacer login, se compara asi:
+
+java
+
+passwordEncoder.matches(rawPassword, encodedPassword);  // compara sin desencriptar
+2. Filtro JWT (JwtAuthenticationFilter)
+Cada peticion HTTP pasa por un filtro automatico que:
+
+Busca el header Authorization: Bearer <token>
+Si no existe → deja pasar (rutas publicas)
+Si existe → extrae el token, verifica que no este expirado, saca el userId y lo pone en el contexto de seguridad de Spring
+Si el token es invalido → simplemente lo ignora y sigue sin autenticar
+3. Usuario se crea con datos financieros en cero
+Al registrarse, los campos financieros se inicializan todos en 0.0:
+
+java
+
+user.setIngresoMensual(0.0);
+user.setGastosMensuales(0.0);
+user.setAhorroPrevio(0.0);
+user.setCuotasMensualesDeuda(0.0);
+Despues el usuario los actualiza con PUT /usuarios/{id}/financial.
+
+4. Patron Interface + Implementacion
+Todo el backend usa el patron de interfaces separadas de la implementacion:
+
+UserService (interface) → UserServiceImpl (implementacion)
+TransactionService → TransactionServiceImpl
+DashboardService → DashboardServiceImpl
+AlertService → AlertServiceImpl
+CategoryService → CategoryServiceImpl
+MlService → MlServiceImpl
+Esto permite cambiar la implementacion sin tocar los controladores (inyeccion de dependencias de Spring).
+
+5. @Transactional en todos los servicios
+Todos los servicios tienen @Transactional, lo que significa que si algo falla a mitad de una operacion, se hace rollback (se deshace todo) para no dejar datos inconsistentes en la BD.
+
+Creo que ahora si esta absolutamente todo. No queda nada sin decir del proyecto.
