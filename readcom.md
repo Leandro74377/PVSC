@@ -2055,3 +2055,35 @@ Cuando se pierde:
 Si el usuario borra manualmente el localStorage
 Si cierra sesion (aunque no vi un boton de logout implementado en el codigo)
 Es una proteccion client-side. Funciona para la navegacion normal pero no es seguridad real del servidor — esa la da el JWT en el backend (si alguien hace requests directos a la API sin token, el backend devuelve 403).
+
+e lo habia dicho parcialmente. Aca va TODO lo que se guarda en localStorage:
+
+Todo lo que se guarda en localStorage:
+
+Key	Que guarda	Quien lo setea	Quien lo lee
+userId	ID del usuario en la BD (ej: "1")	Login / Google Auth	ProtectedRoute, Historial, AnalysisWizard
+jwt_token	Token JWT para peticiones autenticadas	Login / Google Auth	Historial (GET, DELETE, PUT), AnalysisGateway
+userName	Nombre del usuario (ej: "Ana Lopez")	Login / Google Auth	DashboardLayout, Nav (sidebar)
+userEmail	Email del usuario	Login / Google Auth	DashboardLayout, Nav
+userPhoto	URL de la foto de Google (si aplica)	Google Auth	DashboardLayout, Nav
+financeai-draft-{userId}	Borrador del Nuevo Analisis (JSON con datos financieros + transacciones)	AnalysisWizard (auto-save)	AnalysisWizard (al reabrir)
+theme	Tema oscuro/claro ("dark" o "light")	useTheme hook	useTheme hook
+Detalles importantes:
+
+Persistencia del borrador del analisis (draftStorage.ts):
+
+Se guarda automaticamente mientras el usuario llena el formulario
+Si cierra la pagina y vuelve, recupera lo que llevo
+Se elimina cuando completa el analisis
+Si localStorage no esta disponible, simplemente no guarda (no rompe la app)
+Tema oscuro/claro:
+
+Se guarda la preferencia del usuario en localStorage
+Al cargar la app, lee el tema guardado
+Foto de Google:
+
+Si el usuario se logea con Google y tiene foto, se guarda
+Si se logea con email/password normal, se hace removeItem('userPhoto')
+No hay logout implementado que limpie el localStorage (al menos no lo vi en el codigo). Si el usuario quiere "cerrar sesion" tendria que borrar manualmente los datos o se tendria que agregar esa funcionalidad.
+
+Eso es todo lo que usa localStorage en tu proyecto.
