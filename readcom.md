@@ -2008,3 +2008,50 @@ Spring Security ve que la ruta requiere autenticacion
 Devuelve HTTP 403 Forbidden
 El frontend deberia redirigir al login (depende de la implementacion del frontend)
 Eso es todo lo que hay de seguridad. No hay refresh tokens, no hay roles/permisos diferenciados, no hay blacklist de tokens. Es un esquema JWT basico pero funcional para un MVP.
+
+Si, te lo habia mencionado por encima pero no te mostre el codigo. Aca esta exactamente como funciona:
+
+Proteccion de rutas en el frontend (ProtectedRoute.tsx):
+
+typescript
+
+export default function ProtectedRoute() {
+  const isAuthenticated = localStorage.getItem("userId") !== null;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+}
+Como funciona:
+
+Si alguien escribe /dashboard, /historial, /analisis/nuevo, etc. directamente en la URL...
+React Router carga el componente ProtectedRoute (porque todas las rutas privadas estan envueltas dentro de el)
+ProtectedRoute revisa si hay un userId en localStorage
+Si NO hay → te redirige automaticamente a /login (no ves nada del dashboard)
+Si SI hay → te deja pasar y renderiza la pagina que querias
+En el router esta configurado asi:
+
+tsx
+
+{
+  element: <ProtectedRoute />,   // ← barrera
+  children: [
+    { path: "dashboard", element: <DashboardPage /> },
+    { path: "historial", element: <Historial /> },
+    { path: "analisis/nuevo", element: <NewAnalysisPage /> },
+    { path: "metas", element: <GoalsPage /> },
+    { path: "notificaciones", element: <NotificationsPage /> },
+    { path: "soporte", element: <Soporte /> },
+  ]
+}
+Cuando se setea el userId:
+
+Despues de login exitoso: localStorage.setItem('userId', data.id.toString())
+Despues de login con Google: localStorage.setItem('userId', userData.id.toString())
+Cuando se pierde:
+
+Si el usuario borra manualmente el localStorage
+Si cierra sesion (aunque no vi un boton de logout implementado en el codigo)
+Es una proteccion client-side. Funciona para la navegacion normal pero no es seguridad real del servidor — esa la da el JWT en el backend (si alguien hace requests directos a la API sin token, el backend devuelve 403).
