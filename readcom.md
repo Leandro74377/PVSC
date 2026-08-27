@@ -1659,3 +1659,125 @@ if (!emailRegex.test(email)) → "Por favor, ingresá un correo electrónico vá
 Y en el flujo de Nuevo Analisis se usa Zod + React Hook Form para validar schemas de datos financieros y transacciones antes de enviarlos.
 
 Resumen: Validacion doble (frontend + backend), con mezcla de anotaciones Jakarta Validation y chequeos manuales en los controladores.
+
+Estructuras de control usadas en el backend Java:
+
+Try-Catch (en todos los controladores)
+Todos los endpoints estan envueltos en try-catch. Es el patron principal de manejo de errores:
+
+java
+
+@PostMapping
+public ResponseEntity<?> createTransaction(@RequestParam Long userId, @RequestBody CreateTransactionDTO dto) {
+    try {
+        // validaciones manuales...
+        // logica de negocio...
+        return ResponseEntity.status(HttpStatus.CREATED).body(transaction);
+    } catch (RuntimeException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());       // 400
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("Error: " + e.getMessage());                         // 500
+    }
+}
+Esto se repite en todos los controladores: UserController, TransactionController, DashboardController, AlertController, CategoryController. Ningun endpoint deja que una excepcion explote sin atraparla.
+
+If-else (validaciones y logica de negocio)
+Para las validaciones de campos y decisiones de logica:
+
+java
+
+if (dto.getNombreTienda() == null || dto.getNombreTienda().isEmpty()) {
+    return ResponseEntity.badRequest().body("El nombre de tienda es requerido");
+}
+Para el perfil financiero (reglas de clasificacion):
+
+java
+
+if (ratioEndeudamientoDti > 0.37 || mesesSupervivencia < 0.4) {
+    return "En riesgo";
+}
+if (ratioEndeudamientoDti <= 0.20 && mesesSupervivencia >= 1.5 && ratioAhorroNeto >= 0.15) {
+    return "Saludable";
+}
+return "En observación";
+For-each (procesamiento de transacciones)
+Para recorrer listas de transacciones y calcular totales:
+
+java
+
+for (Transaccion t : transactions) {
+    if (t.getType() == Transaccion.TransactionType.INCOME) {
+        ingresoMensualFijo += t.getAmount();
+    } else if (t.getType() == Transaccion.TransactionType.EXPENSE) {
+        // clasificar en esencial vs no esencial...
+    }
+}
+Enum (tipos fijos)
+En vez de switch, se usan enums para valores fijos:
+
+java
+
+// En Transaccion.java
+public enum TransactionType { INCOME, EXPENSE }
+
+// En Alerta.java
+public enum AlertType {
+    LOW_EMERGENCY_FUND, HIGH_EXPENSES, LOW_SAVINGS, HIGH_DEBT, BUDGET_EXCEEDED
+}
+Optional (busquedas en BD)
+Para manejar resultados que pueden no existir:
+
+java
+
+Optional<Usuario> user = userRepository.findById(userId);
+if (user.isEmpty()) {
+    return ResponseEntity.notFound().build();  // 404
+}
+Stream + map + collect (transformacion de datos)
+Para convertir entidades a DTOs:
+
+java
+
+return alertRepository.findByUserOrderByCreatedAtDesc(user.get())
+    .stream()
+    .map(this::convertToDTO)
+    .collect(Collectors.toList());
+Resumen: No se usa switch en ningun lado del proyecto. El patron dominante es try-catch en cada endpoint + if-else para validaciones + for-each para iterar + Optional para busquedas + Stream para transformaciones.
+
+Optional = Una caja que puede tener algo adentro o estar vacia.
+
+Cuando buscas un usuario en la base de datos, puede que exista o puede que no. En vez de devolver null (que causa errores), Java te da un Optional que te obliga a preguntar "hay algo adentro?":
+
+java
+
+Optional<Usuario> user = userRepository.findById(userId);
+
+if (user.isEmpty()) {
+    // No existe, devolver 404
+}
+
+// Si existe, sacarlo de la caja:
+Usuario u = user.get();
+Es como un paquete de correo: puede venir con el producto adentro o puede venir vacio. Optional te obliga a verificar antes de abrirlo.
+
+Stream = Una forma de procesar listas en cadena, paso por paso.
+
+En vez de hacer un for con variables temporales, le decis a la lista: "filtrate, transformate, juntate":
+
+java
+
+// Sin stream (forma clasica):
+List<AlertDTO> resultado = new ArrayList<>();
+for (Alerta a : listaDeAlertas) {
+    AlertDTO dto = convertirADTO(a);
+    resultado.add(dto);
+}
+
+// Con stream (forma moderna):
+List<AlertDTO> resultado = listaDeAlertas
+    .stream()              // convertila en flujo
+    .map(this::convertToDTO)  // transforma cada elemento
+    .collect(Collectors.toList());  // junta todo en una lista nueva
+Es como una linea de produccion en una fabrica: le metes las piezas crudas por un lado, pasan por varias estaciones (filtrar, transformar, ordenar) y al final sale el producto terminado
+
