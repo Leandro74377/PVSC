@@ -1829,3 +1829,58 @@ Esto permite cambiar la implementacion sin tocar los controladores (inyeccion de
 Todos los servicios tienen @Transactional, lo que significa que si algo falla a mitad de una operacion, se hace rollback (se deshace todo) para no dejar datos inconsistentes en la BD.
 
 Creo que ahora si esta absolutamente todo. No queda nada sin decir del proyecto.
+
+Ok, si me falto algo. Aca va lo que no te habia dicho:
+
+Flujo de "Nuevo Analisis" (el wizard del frontend)
+Esto es una feature grande que no te habia detallado. Es un formulario de 3 pasos donde el usuario ingresa toda su informacion financiera:
+
+Paso 1 - Datos financieros:
+
+Ingresos (puede agregar multiples): descripcion, monto mensual, tipo (SALARY, FREELANCE, BUSINESS, BENEFIT, OTHER)
+Ahorro mensual estimado
+Pagos mensuales de deuda
+Monto del fondo de emergencia
+Frecuencia de ahorro (WEEKLY, BIWEEKLY, MONTHLY, IRREGULAR, NONE)
+Paso 2 - Transacciones:
+
+El usuario carga sus transacciones una por una: descripcion, monto, fecha, metodo de pago, modalidad de compra, tipo de movimiento
+Metodos de pago: CASH, DEBIT, CREDIT, TRANSFER, WALLET, OTHER
+Modalidad: PHYSICAL, ONLINE, MIXED, OTHER
+Tipo: EXPENSE, INCOME, TRANSFER, OTHER
+Paso 3 - Revision:
+
+El usuario revisa todo antes de confirmar
+Validacion con Zod: Todo se valida con un schema de Zod que exige:
+
+Montos sean numeros finitos y no negativos
+Fechas en formato ISO (string.date())
+Campos de texto no vacios (min 1 caracter)
+Tipos dentro de los enums permitidos
+Persistencia del borrador: El draft se guarda en localStorage para que si el usuario cierra la pagina no pierda lo que llevo.
+
+Envio al backend: Cuando confirma, se envia todo via POST /api/usuarios/analisis (HttpAnalysisGateway) con el JWT en el header.
+
+Manual de Usuario (docs/Manual_Usuario.md)
+Hay un manual completo para el usuario final que explica:
+
+Que es Finance AI y para que sirve
+Requisitos (navegador moderno, PC/Laptop, internet)
+Como hacer un nuevo analisis (los 3 pasos)
+Como interpretar los perfiles (Saludable / En Observacion / En Riesgo)
+FAQ: no se conecta a bancos, no es para celular
+Solucion de problemas (refrescar, verificar internet)
+Consolidacion del frontend (como se unio el codigo)
+El frontend se consolido desde 3 ramas distintas:
+
+feature/notifications-frontend
+origin/Juan
+origin/feature/dashboard
+Se fusionaron selectivamente en feature/frontend-consolidated preservando todo el trabajo pero sin romper nada.
+
+Arquitectura visual del frontend (layout)
+
+ProtectedRoute → DashboardLayout → Sidebar + Topbar + MobileTabBar → Outlet → Pagina
+Las rutas privadas tienen un layout comun con sidebar lateral, barra superior, y barra de tabs para movil.
+
+Ahora si, eso es todo. No queda ningun archivo sin revisar ni ninguna funcionalidad sin mencionar.
