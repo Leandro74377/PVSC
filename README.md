@@ -56,6 +56,15 @@ Debe mostrar Java 17 en ambos casos.
 ```bash
 mvn clean install
 ```
+cd c:\Users\DETPC\PVSC\ml-service
+pip install python-dotenv tensorflow
+python app.py
+cd c:\Users\DETPC\PVSC\ml-service
+pip install python-dotenv tensorflow
+python app.py
+
+
+
 
 ### 4. Ejecutar la aplicación
 
