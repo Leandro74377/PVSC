@@ -1559,3 +1559,31 @@ La base de datos → esta en Railway (MySQL externo)
 El frontend → esta en Vercel
 OCI Functions → no se uso
 Basicamente OCI aporta dos cosas: el servidor donde corre la API (Compute) y el almacen de los modelos de ML (Object Storage). Todo lo demas esta en otros servicios.
+
+
+
+El main.tsx envuelve toda la app en <GoogleOAuthProvider clientId={...}> (libreria @react-oauth/google)
+El clientId se lee de VITE_GOOGLE_CLIENT_ID en el .env
+En las paginas de Login y Register hay un componente <BotonGoogle> que dice "Iniciar sesion con Google" / "Registrarse con Google"
+Cuando el usuario hace click, Google devuelve un credential (token JWT de Google)
+El hook useGoogleAuth.ts toma ese token y lo envia al backend: POST http://localhost:8080/api/auth/google con { token: tokenStr }
+El backend valida el token de Google y devuelve: { id, token (JWT propio), name, email, photo }
+El frontend guarda en localStorage: userId, jwt_token, userName, userEmail, userPhoto
+Redirige a /historial
+El componente BotonGoogle.jsx:
+
+Verifica si VITE_GOOGLE_CLIENT_ID esta configurado
+Si NO esta configurado: desactiva el boton y muestra un mensaje de error en rojo
+Si esta configurado: usa useGoogleLogin() de la libreria para abrir el popup de Google
+Configuracion necesaria:
+
+bash
+
+# En frontend/.env
+VITE_GOOGLE_CLIENT_ID=tu_google_client_id_de_google_console
+Estado actual:
+
+El codigo esta completo y funcional en frontend
+La documentacion del proyecto dice que falta confirmar si Google Sign-In formara parte de la version final del MVP
+Depende de que el backend tenga implementado el endpoint /api/auth/google (que en el codigo del UserController.java actual no aparece explicitamente, pero el hook lo llama)
+Eso es todo lo que hay sobre Google OAuth en tu proyecto.
